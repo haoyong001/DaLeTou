@@ -1,0 +1,20 @@
+server:
+  port: 8001
+
+spring:
+  cloud:
+    config:
+      server:
+        bootstrap: true
+  application:
+    name: cloud-ball-service
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource  #当前数据源操作类型
+    url: jdbc:mysql://127.0.0.1:3306/daletou?characterEncoding=utf8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true
+    driver-class-name: com.mysql.cj.jdbc.Driver    #MySQL驱动包jdbc:mysql://192.168.201.128:3306
+    username: root
+    password: haoyong
+
+mybatis:
+  mapperLocations: classpath:mapper/*.xml
+  type-aliases-package: com.ball.ball.entity #所有Entity别名类所在包

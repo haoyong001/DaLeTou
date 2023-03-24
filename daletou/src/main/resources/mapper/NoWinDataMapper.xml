@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ball.ball.dao.NoWinDataDao">
+
+    <insert id="insertBatch" parameterType="NoWinDataInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into no_win_data_info(no_win_num) values
+        <foreach collection="list" item="w" separator="," close=";">
+            (#{w.noWinNum})
+        </foreach>
+    </insert>
+
+</mapper>

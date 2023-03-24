@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ball.ball.dao.WinDataInfoDao">
+    <insert id="saveOne" parameterType="WinDataInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into win_data_info(red_and_blue,the_first_prize_count,second_award_count,money_count,date_time,history_data)
+        values (#{redAndBlue},#{theFirstPrizeCount},#{secondAwardCount},#{moneyCount},#{dateTime},#{historyData})
+    </insert>
+
+    <insert id="insertBatch" parameterType="WinDataInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into win_data_info(red_and_blue,the_first_prize_count,second_award_count,money_count,date_time,history_data) values
+        <foreach collection="list" item="w" separator="," close=";">
+         (#{w.redAndBlue},#{w.theFirstPrizeCount},#{w.secondAwardCount},#{w.moneyCount},#{w.dateTime},#{w.historyData})
+        </foreach>
+    </insert>
+
+
+</mapper>

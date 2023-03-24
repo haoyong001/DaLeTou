@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ball.ball.dao.BlueBallDao">
+    <resultMap id="BaseResultMap" type="com.ball.ball.entity.BlueBallInfo">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="blue_ball" property="blueBall" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <insert id="insertOne" parameterType="BlueBallInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into blue_ball_info(blue_ball,create_time)
+        values (#{blueBall},#{createTime})
+    </insert>
+
+    <select id="findAll" resultMap="BaseResultMap">
+        select * from blue_ball_info
+    </select>
+
+</mapper>
