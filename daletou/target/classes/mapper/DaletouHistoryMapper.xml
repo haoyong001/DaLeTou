@@ -19,4 +19,11 @@
         select * from daletou_history
     </select>
 
+    <insert id="batchSave" parameterType="DaletouHistory" useGeneratedKeys="true" keyProperty="issueNo">
+        insert into daletou_history values
+        <foreach collection="list" item="w" separator="," close=";">
+            (#{w.issueNo},#{w.redOne},#{w.redTwo},#{w.redThree},#{w.redFour},#{w.redFive},#{w.blueOne},#{w.blueTwo},#{w.dateTime})
+        </foreach>
+    </insert>
+
 </mapper>

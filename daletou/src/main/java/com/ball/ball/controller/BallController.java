@@ -131,8 +131,19 @@ public class BallController {
                             System.out.println("大乐透投注号码：" + redAndBlue +",一等奖中奖次数："+ theFirstPrizeCount +
                                     ",二等奖中奖次数：" + secondAwardCount + ",除一二等奖外，总奖金金额：" + moneyCount);
                         }
-                        winDataInfoList.add(winMoney);
-                        insertCount.incrementAndGet();
+                        if(theFirstPrizeCount >0){
+                            //一等奖
+                            winDataInfoList.add(winMoney);
+                            insertCount.incrementAndGet();
+                        }else if(secondAwardCount >0){
+                            //二等奖
+                            winDataInfoList.add(winMoney);
+                            insertCount.incrementAndGet();
+                        }else if(moneyCount > 10000){
+                            //总奖金金额 大于一万的留下保存
+                            winDataInfoList.add(winMoney);
+                            insertCount.incrementAndGet();
+                        }
                     }else{
                         //将未中奖的6+3组合保存进数据库
                         NoWinDataInfo noWinDataInfo = new NoWinDataInfo();
