@@ -10,4 +10,6 @@ import java.util.List;
  */
 public interface DaletouHistoryService {
     List<DaletouHistory> findAll();
+
+    void batchSave(List<DaletouHistory> daletouHistory);
 }

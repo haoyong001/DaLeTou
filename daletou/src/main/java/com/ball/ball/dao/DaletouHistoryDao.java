@@ -12,4 +12,6 @@ import java.util.List;
 @Mapper
 public interface DaletouHistoryDao {
     List<DaletouHistory> findAll();
+
+    void batchSave(List<DaletouHistory> daletouHistory);
 }

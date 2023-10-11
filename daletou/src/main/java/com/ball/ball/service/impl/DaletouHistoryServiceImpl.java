@@ -22,4 +22,9 @@ public class DaletouHistoryServiceImpl implements DaletouHistoryService {
     public List<DaletouHistory> findAll() {
         return daletouHistoryDao.findAll();
     }
+
+    @Override
+    public void batchSave(List<DaletouHistory> daletouHistory) {
+        daletouHistoryDao.batchSave(daletouHistory);
+    }
 }

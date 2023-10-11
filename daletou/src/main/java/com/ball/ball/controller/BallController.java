@@ -1,13 +1,17 @@
 package com.ball.ball.controller;
 
 import cn.hutool.core.date.DateTime;
+import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSON;
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.ball.ball.blueball.BlueBallEnum;
+import com.ball.ball.dto.HistoryDaLeTouDto;
 import com.ball.ball.entity.*;
 import com.ball.ball.redball.RedBallEnum;
 import com.ball.ball.service.*;
 import com.ball.ball.winrules.DaletouWinRules;
+import com.sun.org.apache.bcel.internal.generic.RETURN;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -56,7 +60,7 @@ public class BallController {
         System.out.println("6个红球共有组合："+ sixRedBallForAll.size() + "种");
         //JSON red = JSONUtil.parse(sixRedBallForAll);
         List<RedBallInfo> redBallInfoList = new ArrayList<>();
-        sixRedBallForAll.stream().forEach(r ->{
+        sixRedBallForAll.forEach(r ->{
                 RedBallInfo redBallInfo = new RedBallInfo();
                 redBallInfo.setCreateTime(DateTime.now().toString("yyyy-MM-dd HH:mm:ss"));
                 String redBall = r[0]+ "," + r[1]+ "," + r[2]+ "," + r[3]+ "," + r[4]+ "," + r[5];
@@ -82,7 +86,7 @@ public class BallController {
         mes += "3个蓝球共有组合："+ threeBlueBallForAll.size() + "种";
         JSON blue = JSONUtil.parse(threeBlueBallForAll);
         //保存篮球进数据库
-        threeBlueBallForAll.stream().forEach(b ->{
+        threeBlueBallForAll.forEach(b ->{
             String threeBlueBall = b[0]+ "," + b[1]+ ","+ b[2];
             BlueBallInfo blueBallInfo = new BlueBallInfo();
             blueBallInfo.setBlueBall(threeBlueBall);
@@ -110,9 +114,9 @@ public class BallController {
         AtomicInteger insertCount = new AtomicInteger(0);
         List<WinDataInfo> winDataInfoList = new ArrayList<>();
         List<NoWinDataInfo> allNoWinData = new ArrayList<>();
-        redBallInfoList.stream().forEach(r ->{
+        redBallInfoList.forEach(r ->{
             String redBall = r.getRedBall();
-            blueBallInfoList.stream().forEach(b ->{
+            blueBallInfoList.forEach(b ->{
                 String blueBall = b.getBlueBall();
                 String sixAndThree = redBall + ":" + blueBall;
                 Map<String, Object> map = DaletouWinRules.getWinMoney(sixAndThree, daletouHistoryList);
@@ -143,13 +147,58 @@ public class BallController {
         System.out.println("运算结束，耗时："+ (end2-start)/1000/60 +"分，共产生符合要求的数据：" + insertCount.get() + "条，开始入库操作！");
         winDataInfoService.insertBatch(winDataInfoList);
         //保存未中奖数据
-        if(allNoWinData != null && allNoWinData.size()>0){
+        if(allNoWinData.size()>0){
             noWinDataService.insertBatch(allNoWinData);
         }
         long end = System.currentTimeMillis();
         System.out.println("大数据运算结束，总耗时：" + (end - start)/1000/60 + "分");
         mes += ("大数据运算结束，总耗时：" + (end - start)/1000/60 + "分");
         return mes;
+    }
+
+    /**
+     *获取历史开奖记录  并写入数据库
+     * https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry?gameNo=85&provinceId=0&pageSize=3000&isVerify=1&pageNo=1
+     */
+    @GetMapping("/getHistoryPageList")
+    public String getHistoryPageList(@RequestParam int pageSize){
+        //pageSize  目前已开奖开奖期数
+        int pageNo = 1;
+        String url = "https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry?gameNo=85&provinceId=0&isVerify=1&";
+        String param = "pageSize="+ pageSize +"&pageNo=" + pageNo;
+        url += param;
+        String jsonStr = HttpUtil.get(url);
+        JSONObject jsonObject = new JSONObject(jsonStr);
+        Object value = jsonObject.get("value");
+        JSONObject jsonObjectValue = new JSONObject(value);
+        HistoryDaLeTouDto historyDaLeTouDtoList = JSONUtil.toBean(jsonObjectValue,HistoryDaLeTouDto.class);
+        int num = 0;
+        if(historyDaLeTouDtoList != null && historyDaLeTouDtoList.getList() != null && historyDaLeTouDtoList.getList().size()>0){
+            num = historyDaLeTouDtoList.getList().size();
+            List<DaletouHistory> daletouHistory = toDaletouHistory(historyDaLeTouDtoList.getList());
+            daletouHistoryService.batchSave(daletouHistory);
+        }
+        return "已获取开奖数据："+ num +"期";
+    }
+
+    private List<DaletouHistory> toDaletouHistory(List<HistoryDaLeTouEntity> historyDaLeTouDtoList) {
+        List<DaletouHistory> daletouHistoryList = new ArrayList<>();
+        historyDaLeTouDtoList.forEach(h ->{
+            DaletouHistory daletouHistory1 = new DaletouHistory();
+            daletouHistory1.setIssueNo(h.getLotteryDrawNum());
+            daletouHistory1.setDateTime(h.getLotteryDrawTime());
+            String lotteryDrawResult = h.getLotteryDrawResult();
+            String[] split = lotteryDrawResult.split(" ");
+            daletouHistory1.setRedOne(split[0]);
+            daletouHistory1.setRedTwo(split[1]);
+            daletouHistory1.setRedThree(split[2]);
+            daletouHistory1.setRedFour(split[3]);
+            daletouHistory1.setRedFive(split[4]);
+            daletouHistory1.setBlueOne(split[5]);
+            daletouHistory1.setBlueTwo(split[6]);
+            daletouHistoryList.add(daletouHistory1);
+        });
+        return daletouHistoryList;
     }
 
 }
