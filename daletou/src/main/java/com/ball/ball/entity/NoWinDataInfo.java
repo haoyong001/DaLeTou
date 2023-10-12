@@ -18,4 +18,6 @@ public class NoWinDataInfo implements Serializable {
 
     private String noWinNum;
 
+    private int moneyCount;
+
 }

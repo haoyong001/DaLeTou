@@ -10,4 +10,11 @@
         </foreach>
     </insert>
 
+    <select id="getByHistoryData" resultType="com.ball.ball.entity.NoWinDataInfo" parameterType="String">
+        select * from no_win_data_info where no_win_num in
+        <foreach collection="list" item="w" separator="," open ="("  close=")">
+            #{w}
+        </foreach>
+    </select>
+
 </mapper>

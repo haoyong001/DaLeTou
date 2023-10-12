@@ -48,4 +48,9 @@ public class WinDataInfoServiceImpl implements WinDataInfoService {
         long end = System.currentTimeMillis();
         System.out.println("已中奖插入数据库结束，耗时:"+ (end - start)/1000/60 + "分钟");
     }
+
+    @Override
+    public List<WinDataInfo> getByHistoryData(List<String> list) {
+        return winDataInfoDao.getByHistoryData(list);
+    }
 }

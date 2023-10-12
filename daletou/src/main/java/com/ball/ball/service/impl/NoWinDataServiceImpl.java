@@ -42,4 +42,9 @@ public class NoWinDataServiceImpl implements NoWinDataService {
         long end = System.currentTimeMillis();
         System.out.println("未中奖数据插入数据库结束，耗时:"+ (end - start)/1000/60 + "分钟");
     }
+
+    @Override
+    public List<NoWinDataInfo> getByHistoryData(List<String> list) {
+        return noWinDataDao.getByHistoryData(list);
+    }
 }

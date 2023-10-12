@@ -12,4 +12,6 @@ public interface WinDataInfoService {
     void saveOne(WinDataInfo winMoney);
 
     void insertBatch(List<WinDataInfo> winDataInfoList);
+
+    List<WinDataInfo> getByHistoryData(List<String> list);
 }

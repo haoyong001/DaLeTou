@@ -10,4 +10,6 @@ import java.util.List;
  */
 public interface NoWinDataService {
     void insertBatch(List<NoWinDataInfo> noWinDataInfos);
+
+    List<NoWinDataInfo> getByHistoryData(List<String> list);
 }

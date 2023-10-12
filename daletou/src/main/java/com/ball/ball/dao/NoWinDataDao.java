@@ -12,4 +12,6 @@ import java.util.List;
 @Mapper
 public interface NoWinDataDao {
     void insertBatch(List<NoWinDataInfo> subList);
+
+    List<NoWinDataInfo> getByHistoryData(List<String> list);
 }

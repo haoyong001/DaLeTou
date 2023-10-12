@@ -90,7 +90,10 @@ public class DaletouWinRules {
                     //二等奖次数  投注号码与当期开奖号码中的五个前区号码及任意一个后区号码相同，即中奖；
                     secondAwardCount.addAndGet(2);
                     String hisData = d.getRedOne() + "," + d.getRedTwo() + "," +d.getRedThree()+ "," +d.getRedFour()+ "," +d.getRedFive() +";" +
-                            d.getBlueOne() + "," + d.getBlueTwo() + "||";
+                            d.getBlueOne() + "," + d.getBlueTwo();
+                    if(builder.length()>0){
+                        builder.append("||");
+                    }
                     builder.append(hisData);
                 }
                 //判断是否中二等奖，记录次数

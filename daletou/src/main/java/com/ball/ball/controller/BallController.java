@@ -143,11 +143,17 @@ public class BallController {
                             //总奖金金额 大于一万的留下保存
                             winDataInfoList.add(winMoney);
                             insertCount.incrementAndGet();
+                        }else{
+                            NoWinDataInfo noWinDataInfo = new NoWinDataInfo();
+                            noWinDataInfo.setNoWinNum(sixAndThree);
+                            noWinDataInfo.setMoneyCount(moneyCount);
+                            allNoWinData.add(noWinDataInfo);
                         }
                     }else{
                         //将未中奖的6+3组合保存进数据库
                         NoWinDataInfo noWinDataInfo = new NoWinDataInfo();
                         noWinDataInfo.setNoWinNum(sixAndThree);
+                        noWinDataInfo.setMoneyCount(0);
                         allNoWinData.add(noWinDataInfo);
                     }
                 }
@@ -156,7 +162,7 @@ public class BallController {
         mes += (",共产生符合要求的数据：" + insertCount.get() + "条，");
         long end2 = System.currentTimeMillis();
         System.out.println("运算结束，耗时："+ (end2-start)/1000/60 +"分，共产生符合要求的数据：" + insertCount.get() + "条，开始入库操作！");
-        winDataInfoService.insertBatch(winDataInfoList);
+//        winDataInfoService.insertBatch(winDataInfoList);
         //保存未中奖数据
         if(allNoWinData.size()>0){
             noWinDataService.insertBatch(allNoWinData);
@@ -174,6 +180,13 @@ public class BallController {
     @GetMapping("/getHistoryPageList")
     public String getHistoryPageList(@RequestParam int pageSize){
         //pageSize  目前已开奖开奖期数
+        List<DaletouHistory> daletouHistoryServiceAll = daletouHistoryService.findAll();
+        int size = daletouHistoryServiceAll.size();
+        if(pageSize > size){
+            pageSize = pageSize - size;
+        }else{
+            return "传参有误，数据库已有数据" + size + "条，请检查参数，或者清理数据库数据！";
+        }
         int pageNo = 1;
         String url = "https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry?gameNo=85&provinceId=0&isVerify=1&";
         String param = "pageSize="+ pageSize +"&pageNo=" + pageNo;
@@ -210,6 +223,86 @@ public class BallController {
             daletouHistoryList.add(daletouHistory1);
         });
         return daletouHistoryList;
+    }
+
+    @GetMapping("/getWinSixAndThree")
+    public String getWinSixAndThree(@RequestParam String daletou){
+        //查询所有红球组合
+        List<RedBallInfo> redBallInfoList = redBallService.queryByStartAndEndIdx(1,1623160);
+        //查询全部蓝球组合
+        List<BlueBallInfo> blueBallInfoList = blueBallService.findAll();
+        //查询全部真实开奖记录
+        DaletouHistory daletouHistory1 = new DaletouHistory();
+        String[] split = daletou.split(",");
+        daletouHistory1.setRedOne(split[0]);
+        daletouHistory1.setRedTwo(split[1]);
+        daletouHistory1.setRedThree(split[2]);
+        daletouHistory1.setRedFour(split[3]);
+        daletouHistory1.setRedFive(split[4]);
+        daletouHistory1.setBlueOne(split[5]);
+        daletouHistory1.setBlueTwo(split[6]);
+        List<DaletouHistory> daletouHistoryList = new ArrayList<>();
+        daletouHistoryList.add(daletouHistory1);
+        List<WinDataInfo> winDataInfoList = new ArrayList<>();
+        List<String> list = new ArrayList<>();
+        redBallInfoList.forEach(r ->{
+            String redBall = r.getRedBall();
+            blueBallInfoList.forEach(b ->{
+                String blueBall = b.getBlueBall();
+                String sixAndThree = redBall + ":" + blueBall;
+                Map<String, Object> map = DaletouWinRules.getWinMoney(sixAndThree, daletouHistoryList);
+                WinDataInfo winMoney = (WinDataInfo) map.get("winDataInfo");
+                if(winMoney != null){
+                    int moneyCount = winMoney.getMoneyCount();
+                    if(moneyCount != 0){
+                        String redAndBlue = winMoney.getRedAndBlue();
+                        int theFirstPrizeCount = winMoney.getTheFirstPrizeCount();
+                        int secondAwardCount = winMoney.getSecondAwardCount();
+                        String historyData = winMoney.getHistoryData();
+                        if(theFirstPrizeCount >0){
+                            System.out.println("开奖号码："+ historyData +"大乐透投注号码：" + redAndBlue +",一等奖中奖次数："+ theFirstPrizeCount +
+                                    ",二等奖中奖次数：" + secondAwardCount + ",除一二等奖外，总奖金金额：" + moneyCount);
+                        }
+                        if(theFirstPrizeCount >0){
+                            //一等奖
+                            list.add(redAndBlue);
+                        }
+//                        else if(secondAwardCount >0){
+//                            //二等奖
+//                            list.add(redAndBlue);
+//                        }
+                    }
+                }
+            });
+        });
+
+        StringBuilder str = new StringBuilder();
+        str.append("计算开奖组合结束，共产生："+ list.size() +"条数据.");
+        winDataInfoList = winDataInfoService.getByHistoryData(list);
+        int size = winDataInfoList.size();
+        str.append("经过查询以往开奖记录winDataInfoList，筛选出" + size + "条复合预期的数据。") ;
+        List<Integer> mon = new ArrayList<>();
+        winDataInfoList.forEach(w ->{
+            String redAndBlue = w.getRedAndBlue();
+            int moneyCount = w.getMoneyCount();
+            str.append("6+3组合：" + redAndBlue + ",历史中奖金额：" + moneyCount + "元。");
+            System.out.println("开奖记录winDataInfoList:6+3组合："+ redAndBlue + ",历史中奖金额：" + moneyCount + "元。");
+            mon.add(moneyCount);
+        });
+
+        List<NoWinDataInfo> noWinDataInfoList = noWinDataService.getByHistoryData(list);
+        int size1 = noWinDataInfoList.size();
+        str.append("经过查询以往开奖记录NoWinDataInfo，筛选出" + size1 + "条复合预期的数据。") ;
+        noWinDataInfoList.forEach(n ->{
+            String noWinNum = n.getNoWinNum();
+            int moneyCount = n.getMoneyCount();
+            str.append("6+3组合：" + noWinNum + ",历史中奖金额：" + moneyCount + "元。");
+            System.out.println("开奖记录NoWinDataInfo:6+3组合："+ noWinNum + ",历史中奖金额：" + moneyCount + "元。");
+            mon.add(moneyCount);
+        });
+        mon.stream().sorted();
+        str.append("规律标志：" + mon.toString());
+        return str.toString();
     }
 
 }
