@@ -1,7 +1,6 @@
 package com.ball.ball.service.impl;
 
 import com.ball.ball.dao.WinDataInfoDao;
-import com.ball.ball.entity.RedBallInfo;
 import com.ball.ball.entity.WinDataInfo;
 import com.ball.ball.service.WinDataInfoService;
 import org.springframework.stereotype.Service;

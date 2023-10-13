@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ball.ball.dao.SixAndThreeDao">
+    <insert id="batchSave" parameterType="SixAndThreeEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into six_and_three_ball_info(ball) values
+        <foreach collection="list" item="b" separator="," close=";">
+            (#{b.ball})
+        </foreach>
+    </insert>
+
+    <select id="findAll" resultType="com.ball.ball.entity.SixAndThreeEntity" parameterType="INTEGER">
+        select * from six_and_three_ball_info WHERE id &gt; #{arg0} and id &lt;= #{arg1}
+    </select>
+
+</mapper>

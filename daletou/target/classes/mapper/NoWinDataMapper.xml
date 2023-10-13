@@ -4,10 +4,17 @@
 <mapper namespace="com.ball.ball.dao.NoWinDataDao">
 
     <insert id="insertBatch" parameterType="NoWinDataInfo" useGeneratedKeys="true" keyProperty="id">
-        insert into no_win_data_info(no_win_num) values
+        insert into no_win_data_info(no_win_num,money_count) values
         <foreach collection="list" item="w" separator="," close=";">
-            (#{w.noWinNum})
+            (#{w.noWinNum},#{w.moneyCount})
         </foreach>
     </insert>
+
+    <select id="getByHistoryData" resultType="com.ball.ball.entity.NoWinDataInfo" parameterType="String">
+        select * from no_win_data_info where no_win_num in
+        <foreach collection="list" item="w" separator="," open ="("  close=")">
+            #{w}
+        </foreach>
+    </select>
 
 </mapper>

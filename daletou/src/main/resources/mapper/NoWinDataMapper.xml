@@ -4,9 +4,9 @@
 <mapper namespace="com.ball.ball.dao.NoWinDataDao">
 
     <insert id="insertBatch" parameterType="NoWinDataInfo" useGeneratedKeys="true" keyProperty="id">
-        insert into no_win_data_info(no_win_num) values
+        insert into no_win_data_info(no_win_num,money_count) values
         <foreach collection="list" item="w" separator="," close=";">
-            (#{w.noWinNum})
+            (#{w.noWinNum},#{w.moneyCount})
         </foreach>
     </insert>
 
