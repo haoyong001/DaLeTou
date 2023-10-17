@@ -12,4 +12,6 @@ public interface NoWinDataService {
     void insertBatch(List<NoWinDataInfo> noWinDataInfos);
 
     List<NoWinDataInfo> getByHistoryData(List<String> list);
+
+    void batchDelete(List<Integer> idList);
 }

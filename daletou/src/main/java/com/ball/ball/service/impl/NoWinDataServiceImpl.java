@@ -47,4 +47,9 @@ public class NoWinDataServiceImpl implements NoWinDataService {
     public List<NoWinDataInfo> getByHistoryData(List<String> list) {
         return noWinDataDao.getByHistoryData(list);
     }
+
+    @Override
+    public void batchDelete(List<Integer> idList) {
+        noWinDataDao.batchDelete(idList);
+    }
 }

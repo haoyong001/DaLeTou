@@ -14,4 +14,6 @@ public interface NoWinDataDao {
     void insertBatch(List<NoWinDataInfo> subList);
 
     List<NoWinDataInfo> getByHistoryData(List<String> list);
+
+    void batchDelete(List<Integer> idList);
 }

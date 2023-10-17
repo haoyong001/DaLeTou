@@ -11,17 +11,14 @@ import com.ball.ball.entity.*;
 import com.ball.ball.redball.RedBallEnum;
 import com.ball.ball.service.*;
 import com.ball.ball.winrules.DaletouWinRules;
-import com.sun.org.apache.bcel.internal.generic.RETURN;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @ author Mr. Hao
@@ -293,6 +290,7 @@ public class BallController {
             page ++;
             List<WinDataInfo> winDataInfoList = new ArrayList<>();
             List<String> list = new ArrayList<>();
+            AtomicReference<String> kjhm = new AtomicReference<>("");
             sixAndThreeEntityList.forEach(r ->{
                 String sixAndThree = r.getBall();
                 Map<String, Object> map = DaletouWinRules.getWinMoney(sixAndThree, daletouHistoryList);
@@ -303,8 +301,9 @@ public class BallController {
                         String redAndBlue = winMoney.getRedAndBlue();
                         int theFirstPrizeCount = winMoney.getTheFirstPrizeCount();
                         int secondAwardCount = winMoney.getSecondAwardCount();
-                        String historyData = winMoney.getHistoryData();
+                        String historyData=winMoney.getHistoryData();
                         if(theFirstPrizeCount >0){
+                            kjhm.set(historyData);
                             System.out.println("开奖号码："+ historyData +"大乐透投注号码：" + redAndBlue +",一等奖中奖次数："+ theFirstPrizeCount +
                                     ",二等奖中奖次数：" + secondAwardCount + ",除一二等奖外，总奖金金额：" + moneyCount);
                         }
@@ -324,11 +323,13 @@ public class BallController {
                 str.append("经过查询以往开奖记录winDataInfoList，筛选出" + size2 + "条复合预期的数据。") ;
 
                 List<Integer> mon = new ArrayList<>();
+                List<Integer> idList = new ArrayList<>();
+                List<WinDataInfo> winDataInfoListNew = new ArrayList<>();
                 winDataInfoList.forEach(w ->{
                     String redAndBlue = w.getRedAndBlue();
                     int moneyCount = w.getMoneyCount();
                     str.append("6+3组合：" + redAndBlue + ",历史中奖金额：" + moneyCount + "元。");
-                    System.out.println("开奖记录winDataInfoList:6+3组合："+ redAndBlue + ",历史中奖金额：" + moneyCount + "元。");
+                    System.out.println("winDataInfoList主键"+ w.getId() +"开奖记录:6+3组合："+ redAndBlue + ",历史中奖金额：" + moneyCount + "元。");
                     mon.add(moneyCount);
                 });
                 List<NoWinDataInfo> noWinDataInfoList = noWinDataService.getByHistoryData(list);
@@ -336,14 +337,28 @@ public class BallController {
                 str.append("经过查询以往开奖记录NoWinDataInfo，筛选出" + size1 + "条复合预期的数据。") ;
                 noWinDataInfoList.forEach(n ->{
                     String noWinNum = n.getNoWinNum();
+                    WinDataInfo winDataInfo = new WinDataInfo();
+                    winDataInfo.setRedAndBlue(noWinNum);
+                    winDataInfo.setHistoryData(kjhm.get());
+                    //数量无所谓 标记作用
+                    winDataInfo.setTheFirstPrizeCount(1);
+                    winDataInfo.setSecondAwardCount(2);
+                    winDataInfo.setMoneyCount(18000);
+                    winDataInfo.setDateTime(DateTime.now().toString("yyyy-MM-dd HH:mm:ss"));
+                    winDataInfoListNew.add(winDataInfo);
                     int moneyCount = n.getMoneyCount();
                     str.append("6+3组合：" + noWinNum + ",历史中奖金额：" + moneyCount + "元。");
-                    System.out.println("开奖记录NoWinDataInfo:6+3组合："+ noWinNum + ",历史中奖金额：" + moneyCount + "元。");
+                    int id = n.getId();
+                    idList.add(id);
+                    System.out.println("NoWinDataInfo主键："+ id +",开奖记录:6+3组合："+ noWinNum + ",历史中奖金额：" + moneyCount + "元。");
                     mon.add(moneyCount);
                 });
-                mon.stream().sorted();
+                Collections.sort(mon);//默认排序(从小到大)
                 str.append("规律标志：" + mon.toString());
                 System.out.println("开奖总结：" + str.toString());
+                //将未中奖表的数据删除  并保存进已中奖表
+                winDataInfoService.insertBatch(winDataInfoListNew);
+                noWinDataService.batchDelete(idList);
             }
 
         }

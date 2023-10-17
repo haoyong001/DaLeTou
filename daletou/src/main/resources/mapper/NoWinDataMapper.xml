@@ -3,6 +3,11 @@
 
 <mapper namespace="com.ball.ball.dao.NoWinDataDao">
 
+    <resultMap id="noWinDataInfoMap" type="com.ball.ball.entity.NoWinDataInfo">
+        <id property="id" column="id"></id>
+        <result property="noWinNum" column="no_win_num"></result>
+        <result property="moneyCount" column="money_count"></result>
+    </resultMap>
     <insert id="insertBatch" parameterType="NoWinDataInfo" useGeneratedKeys="true" keyProperty="id">
         insert into no_win_data_info(no_win_num,money_count) values
         <foreach collection="list" item="w" separator="," close=";">
@@ -10,11 +15,19 @@
         </foreach>
     </insert>
 
-    <select id="getByHistoryData" resultType="com.ball.ball.entity.NoWinDataInfo" parameterType="String">
+    <select id="getByHistoryData" resultMap="noWinDataInfoMap" parameterType="String">
         select * from no_win_data_info where no_win_num in
         <foreach collection="list" item="w" separator="," open ="("  close=")">
             #{w}
         </foreach>
     </select>
+
+    <delete id="batchDelete" parameterType="Integer">
+        delete from no_win_data_info where id in
+        <foreach collection="list" item="w" separator="," open ="("  close=")">
+            #{w}
+        </foreach>
+    </delete>
+
 
 </mapper>
