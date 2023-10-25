@@ -42,7 +42,9 @@ public class WinDataInfoServiceImpl implements WinDataInfoService {
             }
         }else{
             System.out.println("已中奖插入数据库开始，大小size:"+size);
-            winDataInfoDao.insertBatch(winDataInfoList);
+            if(size >0){
+                winDataInfoDao.insertBatch(winDataInfoList);
+            }
         }
         long end = System.currentTimeMillis();
         System.out.println("已中奖插入数据库结束，耗时:"+ (end - start)/1000/60 + "分钟");

@@ -52,4 +52,14 @@ public class NoWinDataServiceImpl implements NoWinDataService {
     public void batchDelete(List<Integer> idList) {
         noWinDataDao.batchDelete(idList);
     }
+
+    @Override
+    public List<NoWinDataInfo> getAll() {
+        return noWinDataDao.getAll();
+    }
+
+    @Override
+    public void updateById(NoWinDataInfo n) {
+        noWinDataDao.updateById(n);
+    }
 }

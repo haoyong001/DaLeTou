@@ -5,6 +5,7 @@ import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.druid.util.StringUtils;
 import com.ball.ball.blueball.BlueBallEnum;
 import com.ball.ball.dto.HistoryDaLeTouDto;
 import com.ball.ball.entity.*;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -161,6 +163,7 @@ public class BallController {
                         }else{
                             NoWinDataInfo noWinDataInfo = new NoWinDataInfo();
                             noWinDataInfo.setNoWinNum(sixAndThree);
+                            getOddAndEvenNum(noWinDataInfo,sixAndThree);
                             noWinDataInfo.setMoneyCount(moneyCount);
                             allNoWinData.add(noWinDataInfo);
 //                            System.out.println("符合noWinDataInfo数据：组合：" + sixAndThree + "金额：" + moneyCount);
@@ -169,6 +172,7 @@ public class BallController {
                         //将未中奖的6+3组合保存进数据库
                         NoWinDataInfo noWinDataInfo = new NoWinDataInfo();
                         noWinDataInfo.setNoWinNum(sixAndThree);
+                        getOddAndEvenNum(noWinDataInfo,sixAndThree);
                         noWinDataInfo.setMoneyCount(0);
                         allNoWinData.add(noWinDataInfo);
                     }
@@ -202,6 +206,26 @@ public class BallController {
 
         System.out.println(mes);
         return "运算结束";
+    }
+
+    private void getOddAndEvenNum(NoWinDataInfo noWinDataInfo, String sixAndThree) {
+        String[] split = sixAndThree.split(":");
+        String redBallArr = split[0];
+        String[] redBall = redBallArr.split(",");
+        AtomicInteger odd = new AtomicInteger(0);
+        AtomicInteger even = new AtomicInteger(0);
+        Arrays.stream(redBall).forEach(r->{
+            Integer num = Integer.valueOf(r);
+            if(num % 2 == 0){
+                //偶数
+                even.getAndIncrement();
+            }else{
+                //奇数
+                odd.getAndIncrement();
+            }
+        });
+        noWinDataInfo.setOdd(odd.get());
+        noWinDataInfo.setEven(even.get());
     }
 
     /**
@@ -264,7 +288,7 @@ public class BallController {
 //        List<BlueBallInfo> blueBallInfoList = blueBallService.findAll();
         //查询全部6+3组合
         int page =1;
-        int pageSize = 10000;
+        int pageSize = 100000;
         Boolean flag = true;
         //查询全部真实开奖记录
         DaletouHistory daletouHistory1 = new DaletouHistory();
@@ -304,7 +328,7 @@ public class BallController {
                         String historyData=winMoney.getHistoryData();
                         if(theFirstPrizeCount >0){
                             kjhm.set(historyData);
-                            System.out.println("开奖号码："+ historyData +"大乐透投注号码：" + redAndBlue +",一等奖中奖次数："+ theFirstPrizeCount +
+                            System.out.println("开奖号码："+ historyData +",大乐透投注号码：" + redAndBlue +",一等奖中奖次数："+ theFirstPrizeCount +
                                     ",二等奖中奖次数：" + secondAwardCount + ",除一二等奖外，总奖金金额：" + moneyCount);
                         }
                         if(theFirstPrizeCount >0){
@@ -386,6 +410,100 @@ public class BallController {
 
         });
         return "6+3组合数据完毕";
+    }
+
+    /**
+     * 计算未中奖的6+3组合  奇数和偶数个数
+     */
+    @GetMapping("getOddAndEvenNumber")
+    public String getOddAndEvenNumber(){
+        List<NoWinDataInfo> noWinDataInfoList = noWinDataService.getAll();
+        noWinDataInfoList.forEach(n ->{
+            String noWinNum = n.getNoWinNum();
+            String[] split = noWinNum.split(":");
+            String redBallArr = split[0];
+            String[] redBall = redBallArr.split(",");
+            AtomicInteger odd = new AtomicInteger(0);
+            AtomicInteger even = new AtomicInteger(0);
+            Arrays.stream(redBall).forEach(r->{
+                Integer num = Integer.valueOf(r);
+                if(num % 2 == 0){
+                    //偶数
+                    even.getAndIncrement();
+                }else{
+                    //奇数
+                    odd.getAndIncrement();
+                }
+            });
+            n.setOdd(odd.get());
+            n.setEven(even.get());
+            noWinDataService.updateById(n);
+        });
+        return "奇数偶数运算结束！";
+    }
+
+
+    /**
+     * 根据条件选择合适的6+3组合
+     */
+    @GetMapping("getDaletouCombination")
+    public String getDaletouCombination(@RequestParam(required = false) String redBall,
+            @RequestParam(required = false) String blueBall,@RequestParam(required = false) Integer odd,
+                                                           @RequestParam(required = false) Integer even,
+                                                           @RequestParam Integer moneyStart,
+                                                           @RequestParam Integer moneyEnd
+                                                            ){
+        String[] redBallSplit = null;
+        if(!StringUtils.isEmpty(redBall)){
+            redBallSplit = redBall.split(",");
+        }
+        String[] blueBallSplit = null;
+        if(!StringUtils.isEmpty(blueBall)){
+            blueBallSplit = blueBall.split(",");
+        }
+        Map<Integer,String> map = new HashMap<>();
+        List<NoWinDataInfo> noWinDataServiceAll = noWinDataService.getAll();
+        String[] finalRedBallSplit = redBallSplit;
+        String[] finalBlueBallSplit = blueBallSplit;
+        noWinDataServiceAll.forEach(n ->{
+            String noWinNum = n.getNoWinNum();
+            String[] noWinSplit = noWinNum.split(":");
+            String redBall6 = noWinSplit[0];
+            String BlueBall3 = noWinSplit[1];
+            AtomicBoolean flag = new AtomicBoolean(true);
+            if(finalRedBallSplit != null){
+                Arrays.stream(finalRedBallSplit).forEach(r ->{
+                    if(!redBall6.contains(r)){
+                        flag.set(false);
+                    }
+                });
+            }
+            if(finalBlueBallSplit != null && flag.get()){
+                Arrays.stream(finalBlueBallSplit).forEach(b ->{
+                    if(!BlueBall3.contains(b)){
+                        flag.set(false);
+                    }
+                });
+            }
+            int odd1 = n.getOdd();
+            if(odd1 < odd && flag.get()){
+                flag.set(false);
+            }
+            int even1 = n.getEven();
+            if(even1 < even && flag.get()){
+                flag.set(false);
+            }
+            int moneyCount = n.getMoneyCount();
+            if((moneyCount < moneyStart || moneyCount > moneyEnd) && flag.get()){
+                flag.set(false);
+            }
+            if(flag.get()){
+                int id = n.getId();
+                map.put(id,noWinNum);
+            }
+        });
+        return JSONUtil.toJsonStr(map);
+
     }
 
 }

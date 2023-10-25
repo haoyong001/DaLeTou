@@ -7,6 +7,8 @@
         <id property="id" column="id"></id>
         <result property="noWinNum" column="no_win_num"></result>
         <result property="moneyCount" column="money_count"></result>
+        <result property="odd" column="odd"></result>
+        <result property="even" column="even"></result>
     </resultMap>
     <insert id="insertBatch" parameterType="NoWinDataInfo" useGeneratedKeys="true" keyProperty="id">
         insert into no_win_data_info(no_win_num,money_count) values
@@ -29,5 +31,12 @@
         </foreach>
     </delete>
 
+    <select id="getAll" resultMap="noWinDataInfoMap">
+        select * from no_win_data_info
+    </select>
+
+    <update id="updateById" parameterType="NoWinDataInfo">
+        update no_win_data_info set odd = #{odd},even = #{even} where id = #{id}
+    </update>
 
 </mapper>

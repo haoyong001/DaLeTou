@@ -14,4 +14,8 @@ public interface NoWinDataService {
     List<NoWinDataInfo> getByHistoryData(List<String> list);
 
     void batchDelete(List<Integer> idList);
+
+    List<NoWinDataInfo> getAll();
+
+    void updateById(NoWinDataInfo n);
 }

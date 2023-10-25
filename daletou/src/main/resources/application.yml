@@ -10,7 +10,7 @@ spring:
     name: cloud-ball-service
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource  #当前数据源操作类型
-    url: jdbc:mysql://127.0.0.1:3306/daletou?characterEncoding=utf8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true
+    url: jdbc:mysql://127.0.0.1:3306/daletou?characterEncoding=utf8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver    #MySQL驱动包jdbc:mysql://192.168.201.128:3306
     username: root
     password: haoyong

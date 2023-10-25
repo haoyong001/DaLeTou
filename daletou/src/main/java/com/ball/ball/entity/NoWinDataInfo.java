@@ -20,4 +20,7 @@ public class NoWinDataInfo implements Serializable {
 
     private int moneyCount;
 
+    private int odd;
+
+    private int even;
 }
