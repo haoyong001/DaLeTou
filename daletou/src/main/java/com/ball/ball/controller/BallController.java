@@ -417,28 +417,41 @@ public class BallController {
      */
     @GetMapping("getOddAndEvenNumber")
     public String getOddAndEvenNumber(){
-        List<NoWinDataInfo> noWinDataInfoList = noWinDataService.getAll();
-        noWinDataInfoList.forEach(n ->{
-            String noWinNum = n.getNoWinNum();
-            String[] split = noWinNum.split(":");
-            String redBallArr = split[0];
-            String[] redBall = redBallArr.split(",");
-            AtomicInteger odd = new AtomicInteger(0);
-            AtomicInteger even = new AtomicInteger(0);
-            Arrays.stream(redBall).forEach(r->{
-                Integer num = Integer.valueOf(r);
-                if(num % 2 == 0){
-                    //偶数
-                    even.getAndIncrement();
-                }else{
-                    //奇数
-                    odd.getAndIncrement();
-                }
+        int pageNum = 1;
+        int pageSize = 100000;
+        Boolean flag = true;
+        while(flag){
+            int startIndex = (pageNum - 1) * pageSize;
+            int endIndex = pageNum * pageSize;
+            List<NoWinDataInfo> noWinDataInfoList = noWinDataService.getAll(startIndex,endIndex);
+            if(noWinDataInfoList == null || noWinDataInfoList.size() ==0){
+                flag = false;
+                break;
+            }
+            System.out.println("第" + pageNum + "次运算开始");
+            pageNum ++;
+            noWinDataInfoList.forEach(n ->{
+                String noWinNum = n.getNoWinNum();
+                String[] split = noWinNum.split(":");
+                String redBallArr = split[0];
+                String[] redBall = redBallArr.split(",");
+                AtomicInteger odd = new AtomicInteger(0);
+                AtomicInteger even = new AtomicInteger(0);
+                Arrays.stream(redBall).forEach(r->{
+                    Integer num = Integer.valueOf(r);
+                    if(num % 2 == 0){
+                        //偶数
+                        even.getAndIncrement();
+                    }else{
+                        //奇数
+                        odd.getAndIncrement();
+                    }
+                });
+                n.setOdd(odd.get());
+                n.setEven(even.get());
+                noWinDataService.updateById(n);
             });
-            n.setOdd(odd.get());
-            n.setEven(even.get());
-            noWinDataService.updateById(n);
-        });
+        }
         return "奇数偶数运算结束！";
     }
 
@@ -462,48 +475,60 @@ public class BallController {
             blueBallSplit = blueBall.split(",");
         }
         Map<Integer,String> map = new HashMap<>();
-        List<NoWinDataInfo> noWinDataServiceAll = noWinDataService.getAll();
+        int pageNum = 1;
+        int pageSize = 100000;
+        Boolean flag1 = true;
         String[] finalRedBallSplit = redBallSplit;
         String[] finalBlueBallSplit = blueBallSplit;
-        noWinDataServiceAll.forEach(n ->{
-            String noWinNum = n.getNoWinNum();
-            String[] noWinSplit = noWinNum.split(":");
-            String redBall6 = noWinSplit[0];
-            String BlueBall3 = noWinSplit[1];
-            AtomicBoolean flag = new AtomicBoolean(true);
-            if(finalRedBallSplit != null){
-                Arrays.stream(finalRedBallSplit).forEach(r ->{
-                    if(!redBall6.contains(r)){
-                        flag.set(false);
-                    }
-                });
+        while(flag1){
+            int startIndex = (pageNum - 1) * pageSize;
+            int endIndex = pageNum * pageSize;
+            List<NoWinDataInfo> noWinDataServiceAll = noWinDataService.getAll(startIndex,endIndex);
+            if(noWinDataServiceAll == null || noWinDataServiceAll.size() ==0){
+                flag1 = false;
+                break;
             }
-            if(finalBlueBallSplit != null && flag.get()){
-                Arrays.stream(finalBlueBallSplit).forEach(b ->{
-                    if(!BlueBall3.contains(b)){
-                        flag.set(false);
-                    }
-                });
-            }
-            int odd1 = n.getOdd();
-            if(odd1 < odd && flag.get()){
-                flag.set(false);
-            }
-            int even1 = n.getEven();
-            if(even1 < even && flag.get()){
-                flag.set(false);
-            }
-            int moneyCount = n.getMoneyCount();
-            if((moneyCount < moneyStart || moneyCount > moneyEnd) && flag.get()){
-                flag.set(false);
-            }
-            if(flag.get()){
-                int id = n.getId();
-                map.put(id,noWinNum);
-            }
-        });
+            System.out.println("第" + pageNum + "次运算开始");
+            pageNum ++;
+            noWinDataServiceAll.forEach(n ->{
+                String noWinNum = n.getNoWinNum();
+                String[] noWinSplit = noWinNum.split(":");
+                String redBall6 = noWinSplit[0];
+                String BlueBall3 = noWinSplit[1];
+                AtomicBoolean flag = new AtomicBoolean(true);
+                if(finalRedBallSplit != null){
+                    Arrays.stream(finalRedBallSplit).forEach(r ->{
+                        if(!redBall6.contains(r)){
+                            flag.set(false);
+                        }
+                    });
+                }
+                if(finalBlueBallSplit != null && flag.get()){
+                    Arrays.stream(finalBlueBallSplit).forEach(b ->{
+                        if(!BlueBall3.contains(b)){
+                            flag.set(false);
+                        }
+                    });
+                }
+                int odd1 = n.getOdd();
+                if(odd1 < odd && flag.get()){
+                    flag.set(false);
+                }
+                int even1 = n.getEven();
+                if(even1 < even && flag.get()){
+                    flag.set(false);
+                }
+                int moneyCount = n.getMoneyCount();
+                if((moneyCount < moneyStart || moneyCount > moneyEnd) && flag.get()){
+                    flag.set(false);
+                }
+                if(flag.get()){
+                    int id = n.getId();
+                    map.put(id,noWinNum);
+                }
+            });
+        }
         return JSONUtil.toJsonStr(map);
-
     }
 
 }

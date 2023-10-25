@@ -50,12 +50,14 @@ public class NoWinDataServiceImpl implements NoWinDataService {
 
     @Override
     public void batchDelete(List<Integer> idList) {
-        noWinDataDao.batchDelete(idList);
+        if(idList != null && idList.size()>0){
+            noWinDataDao.batchDelete(idList);
+        }
     }
 
     @Override
-    public List<NoWinDataInfo> getAll() {
-        return noWinDataDao.getAll();
+    public List<NoWinDataInfo> getAll(int startIndex,int endIndex) {
+        return noWinDataDao.getAll(startIndex,endIndex);
     }
 
     @Override

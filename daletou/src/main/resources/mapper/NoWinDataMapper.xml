@@ -31,11 +31,11 @@
         </foreach>
     </delete>
 
-    <select id="getAll" resultMap="noWinDataInfoMap">
-        select * from no_win_data_info
+    <select id="getAll" resultMap="noWinDataInfoMap" parameterType="INTEGER">
+        select * from no_win_data_info where id &gt; #{arg0} and id &lt;= #{arg1}
     </select>
 
-    <update id="updateById" parameterType="NoWinDataInfo">
+    <update id="updateById" parameterType="NoWinDataInfo" >
         update no_win_data_info set odd = #{odd},even = #{even} where id = #{id}
     </update>
 
