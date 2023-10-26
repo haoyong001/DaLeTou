@@ -39,4 +39,27 @@
         update no_win_data_info set odd = #{odd},even = #{even} where id = #{id}
     </update>
 
+    <update id="batchUpdateById" parameterType="com.ball.ball.entity.NoWinDataInfo">
+            UPDATE no_win_data_info
+            <trim prefix="set" suffixOverrides=",">
+                <trim prefix="odd=case" suffix="end,">
+                    <foreach collection="list" item="noWinDataInfo">
+                        WHEN id =#{noWinDataInfo.id} THEN #{noWinDataInfo.odd}
+                    </foreach>
+                </trim>
+                <trim prefix="even=case" suffix="end">
+                    <foreach collection="list" item="noWinDataInfo">
+                        WHEN id =#{noWinDataInfo.id} THEN #{noWinDataInfo.even}
+                    </foreach>
+                </trim>
+
+            </trim>
+            <where>
+                <foreach collection="list" separator="or" item="noWinDataInfo">
+                    id =#{noWinDataInfo.id}
+                </foreach>
+            </where>
+
+    </update>
+
 </mapper>

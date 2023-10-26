@@ -61,7 +61,12 @@ public class NoWinDataServiceImpl implements NoWinDataService {
     }
 
     @Override
-    public void updateById(NoWinDataInfo n) {
-        noWinDataDao.updateById(n);
+    public void updateById(NoWinDataInfo noWinDataInfo) {
+            noWinDataDao.updateById(noWinDataInfo);
+    }
+
+    @Override
+    public void batchUpdateById(List<NoWinDataInfo> noWinDataInfoList) {
+        noWinDataDao.batchUpdateById(noWinDataInfoList);
     }
 }

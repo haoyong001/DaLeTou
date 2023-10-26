@@ -20,4 +20,6 @@ public interface NoWinDataDao {
     List<NoWinDataInfo> getAll(int startIndex,int endIndex);
 
     void updateById(NoWinDataInfo n);
+
+    void batchUpdateById(List<NoWinDataInfo> noWinDataInfoList);
 }

@@ -417,19 +417,24 @@ public class BallController {
      */
     @GetMapping("getOddAndEvenNumber")
     public String getOddAndEvenNumber(){
-        int pageNum = 1;
-        int pageSize = 100000;
+        int pageNum = 813;
+        int pageSize = 10000;
         Boolean flag = true;
         while(flag){
             int startIndex = (pageNum - 1) * pageSize;
             int endIndex = pageNum * pageSize;
+            long t1 = System.currentTimeMillis();
             List<NoWinDataInfo> noWinDataInfoList = noWinDataService.getAll(startIndex,endIndex);
+            long t2 = System.currentTimeMillis();
+            System.out.println("查询数据：" + pageSize + "条，耗时：" + (t2 - t1));
             if(noWinDataInfoList == null || noWinDataInfoList.size() ==0){
                 flag = false;
                 break;
             }
             System.out.println("第" + pageNum + "次运算开始");
             pageNum ++;
+            List<NoWinDataInfo> noWinDataInfoListNew = new ArrayList<>();
+            long t3 = System.currentTimeMillis();
             noWinDataInfoList.forEach(n ->{
                 String noWinNum = n.getNoWinNum();
                 String[] split = noWinNum.split(":");
@@ -449,8 +454,13 @@ public class BallController {
                 });
                 n.setOdd(odd.get());
                 n.setEven(even.get());
-                noWinDataService.updateById(n);
+                noWinDataInfoListNew.add(n);
             });
+            long t4 = System.currentTimeMillis();
+            System.out.println("奇偶运算耗时：" + (t4-t3));
+            noWinDataService.batchUpdateById(noWinDataInfoListNew);
+            long t5 = System.currentTimeMillis();
+            System.out.println("插入数据库耗时：" + (t5-t4));
         }
         return "奇数偶数运算结束！";
     }

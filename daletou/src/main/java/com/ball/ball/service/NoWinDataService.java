@@ -17,5 +17,7 @@ public interface NoWinDataService {
 
     List<NoWinDataInfo> getAll(int startIndex,int endIndex);
 
-    void updateById(NoWinDataInfo n);
+    void updateById(NoWinDataInfo noWinDataInfoList);
+
+    void batchUpdateById(List<NoWinDataInfo> noWinDataInfoListNew);
 }
