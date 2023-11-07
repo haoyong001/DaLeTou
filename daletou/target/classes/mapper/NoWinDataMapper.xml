@@ -40,17 +40,6 @@
     </update>
 
     <update id="batchUpdateById" parameterType="com.ball.ball.entity.NoWinDataInfo">
-<!--        update no_win_data_info set-->
-<!--        <foreach collection="list" item="noWinDataInfo" open="odd = case id" close="end,">-->
-<!--            when #{noWinDataInfo.id} then #{noWinDataInfo.odd}-->
-<!--        </foreach>-->
-<!--        <foreach collection="list" item="noWinDataInfo" open="even = case id" close="end">-->
-<!--            when #{noWinDataInfo.id} then #{noWinDataInfo.even}-->
-<!--        </foreach>-->
-<!--        where id in-->
-<!--        <foreach collection="list" item="noWinDataInfo" open="(" close=")" separator=",">-->
-<!--            #{noWinDataInfo.id}-->
-<!--        </foreach>-->
             UPDATE no_win_data_info
             <trim prefix="set" suffixOverrides=",">
                 <trim prefix="odd=case" suffix="end,">

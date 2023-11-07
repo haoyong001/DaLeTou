@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -287,9 +289,10 @@ public class BallController {
 //        //查询全部蓝球组合
 //        List<BlueBallInfo> blueBallInfoList = blueBallService.findAll();
         //查询全部6+3组合
-        int page =1;
+        long t1 = System.currentTimeMillis();
+        AtomicInteger page = new AtomicInteger(1);
         int pageSize = 100000;
-        Boolean flag = true;
+        AtomicReference<Boolean> flag = new AtomicReference<>(true);
         //查询全部真实开奖记录
         DaletouHistory daletouHistory1 = new DaletouHistory();
         String[] split = daletou.split(",");
@@ -302,92 +305,102 @@ public class BallController {
         daletouHistory1.setBlueTwo(split[6]);
         List<DaletouHistory> daletouHistoryList = new ArrayList<>();
         daletouHistoryList.add(daletouHistory1);
-        while (flag){
-            int startIdx = (page -1) * pageSize;
-            int endIdx = page * pageSize;
-            List<SixAndThreeEntity> sixAndThreeEntityList = sixAndThreeService.findAll(startIdx,endIdx);
-            int size = sixAndThreeEntityList.size();
-            if(size == 0){
-                flag = false;
-                break;
-            }
-            page ++;
-            List<WinDataInfo> winDataInfoList = new ArrayList<>();
-            List<String> list = new ArrayList<>();
-            AtomicReference<String> kjhm = new AtomicReference<>("");
-            sixAndThreeEntityList.forEach(r ->{
-                String sixAndThree = r.getBall();
-                Map<String, Object> map = DaletouWinRules.getWinMoney(sixAndThree, daletouHistoryList);
-                WinDataInfo winMoney = (WinDataInfo) map.get("winDataInfo");
-                if(winMoney != null){
-                    int moneyCount = winMoney.getMoneyCount();
-                    if(moneyCount != 0){
-                        String redAndBlue = winMoney.getRedAndBlue();
-                        int theFirstPrizeCount = winMoney.getTheFirstPrizeCount();
-                        int secondAwardCount = winMoney.getSecondAwardCount();
-                        String historyData=winMoney.getHistoryData();
-                        if(theFirstPrizeCount >0){
-                            kjhm.set(historyData);
-                            System.out.println("开奖号码："+ historyData +",大乐透投注号码：" + redAndBlue +",一等奖中奖次数："+ theFirstPrizeCount +
-                                    ",二等奖中奖次数：" + secondAwardCount + ",除一二等奖外，总奖金金额：" + moneyCount);
-                        }
-                        if(theFirstPrizeCount >0){
-                            //一等奖
-                            list.add(redAndBlue);
-                        }
+        while (flag.get()){
+            CountDownLatch countDownLatch = new CountDownLatch(6);
+            for (int i = 1; i <= 6; i++) {
+                new Thread(() -> {
+                    System.out.println(Thread.currentThread().getName() + "\t" + "开始");
+                    int startIdx = (page.get() -1) * pageSize;
+                    int endIdx = page.get() * pageSize;
+                    List<SixAndThreeEntity> sixAndThreeEntityList = sixAndThreeService.findAll(startIdx,endIdx);
+                    int size = sixAndThreeEntityList.size();
+                    if(size == 0){
+                        flag.set(false);
                     }
-                }
-            });
 
-            StringBuilder str = new StringBuilder();
-            str.append("计算开奖组合结束，共产生："+ list.size() +"条数据.");
-            if(list.size()>0){
-                winDataInfoList = winDataInfoService.getByHistoryData(list);
-                int size2 = winDataInfoList.size();
-                str.append("经过查询以往开奖记录winDataInfoList，筛选出" + size2 + "条复合预期的数据。") ;
+                    List<WinDataInfo> winDataInfoList = new ArrayList<>();
+                    List<String> list = new ArrayList<>();
+                    AtomicReference<String> kjhm = new AtomicReference<>("");
+                    sixAndThreeEntityList.forEach(r ->{
+                        String sixAndThree = r.getBall();
+                        Map<String, Object> map = DaletouWinRules.getWinMoney(sixAndThree, daletouHistoryList);
+                        WinDataInfo winMoney = (WinDataInfo) map.get("winDataInfo");
+                        if(winMoney != null){
+                            int moneyCount = winMoney.getMoneyCount();
+                            if(moneyCount != 0){
+                                String redAndBlue = winMoney.getRedAndBlue();
+                                int theFirstPrizeCount = winMoney.getTheFirstPrizeCount();
+                                int secondAwardCount = winMoney.getSecondAwardCount();
+                                String historyData=winMoney.getHistoryData();
+                                if(theFirstPrizeCount >0){
+                                    kjhm.set(historyData);
+                                    System.out.println("开奖号码："+ historyData +",大乐透投注号码：" + redAndBlue +",一等奖中奖次数："+ theFirstPrizeCount +
+                                            ",二等奖中奖次数：" + secondAwardCount + ",除一二等奖外，总奖金金额：" + moneyCount);
+                                }
+                                if(theFirstPrizeCount >0){
+                                    //一等奖
+                                    list.add(redAndBlue);
+                                }
+                            }
+                        }
+                    });
+                    StringBuilder str = new StringBuilder();
+                    str.append("计算开奖组合结束，共产生："+ list.size() +"条数据.");
+                    if(list.size()>0){
+                        winDataInfoList = winDataInfoService.getByHistoryData(list);
+                        int size2 = winDataInfoList.size();
+                        str.append("经过查询以往开奖记录winDataInfoList，筛选出" + size2 + "条复合预期的数据。") ;
 
-                List<Integer> mon = new ArrayList<>();
-                List<Integer> idList = new ArrayList<>();
-                List<WinDataInfo> winDataInfoListNew = new ArrayList<>();
-                winDataInfoList.forEach(w ->{
-                    String redAndBlue = w.getRedAndBlue();
-                    int moneyCount = w.getMoneyCount();
-                    str.append("6+3组合：" + redAndBlue + ",历史中奖金额：" + moneyCount + "元。");
-                    System.out.println("winDataInfoList主键"+ w.getId() +"开奖记录:6+3组合："+ redAndBlue + ",历史中奖金额：" + moneyCount + "元。");
-                    mon.add(moneyCount);
-                });
-                List<NoWinDataInfo> noWinDataInfoList = noWinDataService.getByHistoryData(list);
-                int size1 = noWinDataInfoList.size();
-                str.append("经过查询以往开奖记录NoWinDataInfo，筛选出" + size1 + "条复合预期的数据。") ;
-                noWinDataInfoList.forEach(n ->{
-                    String noWinNum = n.getNoWinNum();
-                    WinDataInfo winDataInfo = new WinDataInfo();
-                    winDataInfo.setRedAndBlue(noWinNum);
-                    winDataInfo.setHistoryData(kjhm.get());
-                    //数量无所谓 标记作用
-                    winDataInfo.setTheFirstPrizeCount(1);
-                    winDataInfo.setSecondAwardCount(2);
-                    winDataInfo.setMoneyCount(18000);
-                    winDataInfo.setDateTime(DateTime.now().toString("yyyy-MM-dd HH:mm:ss"));
-                    winDataInfoListNew.add(winDataInfo);
-                    int moneyCount = n.getMoneyCount();
-                    str.append("6+3组合：" + noWinNum + ",历史中奖金额：" + moneyCount + "元。");
-                    int id = n.getId();
-                    idList.add(id);
-                    System.out.println("NoWinDataInfo主键："+ id +",开奖记录:6+3组合："+ noWinNum + ",历史中奖金额：" + moneyCount + "元。");
-                    mon.add(moneyCount);
-                });
-                Collections.sort(mon);//默认排序(从小到大)
-                str.append("规律标志：" + mon.toString());
-                System.out.println("开奖总结：" + str.toString());
-                //将未中奖表的数据删除  并保存进已中奖表
-                winDataInfoService.insertBatch(winDataInfoListNew);
-                noWinDataService.batchDelete(idList);
+                        List<Integer> mon = new ArrayList<>();
+                        List<Integer> idList = new ArrayList<>();
+                        List<WinDataInfo> winDataInfoListNew = new ArrayList<>();
+                        winDataInfoList.forEach(w ->{
+                            String redAndBlue = w.getRedAndBlue();
+                            int moneyCount = w.getMoneyCount();
+                            str.append("6+3组合：" + redAndBlue + ",历史中奖金额：" + moneyCount + "元。");
+                            System.out.println("winDataInfoList主键"+ w.getId() +"开奖记录:6+3组合："+ redAndBlue + ",历史中奖金额：" + moneyCount + "元。");
+                            mon.add(moneyCount);
+                        });
+                        List<NoWinDataInfo> noWinDataInfoList = noWinDataService.getByHistoryData(list);
+                        int size1 = noWinDataInfoList.size();
+                        str.append("经过查询以往开奖记录NoWinDataInfo，筛选出" + size1 + "条复合预期的数据。") ;
+                        noWinDataInfoList.forEach(n ->{
+                            String noWinNum = n.getNoWinNum();
+                            WinDataInfo winDataInfo = new WinDataInfo();
+                            winDataInfo.setRedAndBlue(noWinNum);
+                            winDataInfo.setHistoryData(kjhm.get());
+                            //数量无所谓 标记作用
+                            winDataInfo.setTheFirstPrizeCount(1);
+                            winDataInfo.setSecondAwardCount(2);
+                            winDataInfo.setMoneyCount(18000);
+                            winDataInfo.setDateTime(DateTime.now().toString("yyyy-MM-dd HH:mm:ss"));
+                            winDataInfoListNew.add(winDataInfo);
+                            int moneyCount = n.getMoneyCount();
+                            str.append("6+3组合：" + noWinNum + ",历史中奖金额：" + moneyCount + "元。");
+                            int id = n.getId();
+                            idList.add(id);
+                            System.out.println("NoWinDataInfo主键："+ id +",开奖记录:6+3组合："+ noWinNum + ",历史中奖金额：" + moneyCount + "元。");
+                            mon.add(moneyCount);
+                        });
+                        Collections.sort(mon);//默认排序(从小到大)
+                        str.append("规律标志：" + mon.toString());
+                        System.out.println("开奖总结：" + str.toString());
+                        //将未中奖表的数据删除  并保存进已中奖表
+                        winDataInfoService.insertBatch(winDataInfoListNew);
+                        noWinDataService.batchDelete(idList);
+                    }
+                    countDownLatch.countDown();
+                }, ("线程：" + i)).start();
+                page.getAndIncrement();
             }
-
+            try {
+                countDownLatch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-
-        return "预测结束，控制台查看明细";
+        long t2 = System.currentTimeMillis();
+        return "开奖记录调整数据完毕，耗时：" + ((t2-t1)/1000) + "秒";
     }
 
     @GetMapping("createSixAndThreeBall")
@@ -413,11 +426,11 @@ public class BallController {
     }
 
     /**
-     * 计算未中奖的6+3组合  奇数和偶数个数
+     * 计算未中奖的6+3组合  奇数和偶数个数  从小到大
      */
     @GetMapping("getOddAndEvenNumber")
     public String getOddAndEvenNumber(){
-        int pageNum = 813;
+        int pageNum = 35606;
         int pageSize = 10000;
         Boolean flag = true;
         while(flag){
@@ -426,12 +439,12 @@ public class BallController {
             long t1 = System.currentTimeMillis();
             List<NoWinDataInfo> noWinDataInfoList = noWinDataService.getAll(startIndex,endIndex);
             long t2 = System.currentTimeMillis();
-            System.out.println("查询数据：" + pageSize + "条，耗时：" + (t2 - t1));
+            System.out.println("从小到大:查询数据：" + pageSize + "条，耗时：" + (t2 - t1));
             if(noWinDataInfoList == null || noWinDataInfoList.size() ==0){
                 flag = false;
                 break;
             }
-            System.out.println("第" + pageNum + "次运算开始");
+            System.out.println("从小到大:第" + pageNum + "次运算开始");
             pageNum ++;
             List<NoWinDataInfo> noWinDataInfoListNew = new ArrayList<>();
             long t3 = System.currentTimeMillis();
@@ -457,12 +470,72 @@ public class BallController {
                 noWinDataInfoListNew.add(n);
             });
             long t4 = System.currentTimeMillis();
-            System.out.println("奇偶运算耗时：" + (t4-t3));
+            System.out.println("从小到大:奇偶运算耗时：" + (t4-t3));
             noWinDataService.batchUpdateById(noWinDataInfoListNew);
             long t5 = System.currentTimeMillis();
-            System.out.println("插入数据库耗时：" + (t5-t4));
+            System.out.println("从小到大:插入数据库耗时：" + (t5-t4));
         }
-        return "奇数偶数运算结束！";
+        return "从小到大:奇数偶数运算结束！";
+    }
+
+    /**
+     * 计算未中奖的6+3组合  奇数和偶数个数  从大到小
+     */
+    @GetMapping("getOddAndEvenNumberDesc")
+    public String getOddAndEvenNumberDesc(){
+        //35605 8246
+        int pageNum = 35606;
+        int pageSize = 10000;
+        AtomicReference<Boolean> flag = new AtomicReference<>(true);
+        while(flag.get()){
+            int startIndex = (pageNum - 1) * pageSize;
+            int endIndex = pageNum * pageSize;
+            long t1 = System.currentTimeMillis();
+            List<NoWinDataInfo> noWinDataInfoList = noWinDataService.getAll(startIndex,endIndex);
+            long t2 = System.currentTimeMillis();
+            System.out.println("从大到小:查询数据：" + pageSize + "条，耗时：" + (t2 - t1));
+            if(noWinDataInfoList == null || noWinDataInfoList.size() ==0){
+                flag.set(false);
+                break;
+            }
+            System.out.println("从大到小:第" + pageNum + "次运算开始");
+            pageNum --;
+            List<NoWinDataInfo> noWinDataInfoListNew = new ArrayList<>();
+            long t3 = System.currentTimeMillis();
+            for(NoWinDataInfo n : noWinDataInfoList){
+                int odd1 = n.getOdd();
+                int even1 = n.getEven();
+                if(odd1 != 0 && even1 != 0){
+                    flag.set(false);
+                    continue;
+                }
+                String noWinNum = n.getNoWinNum();
+                String[] split = noWinNum.split(":");
+                String redBallArr = split[0];
+                String[] redBall = redBallArr.split(",");
+                AtomicInteger odd = new AtomicInteger(0);
+                AtomicInteger even = new AtomicInteger(0);
+                Arrays.stream(redBall).forEach(r->{
+                    Integer num = Integer.valueOf(r);
+                    if(num % 2 == 0){
+                        //偶数
+                        even.getAndIncrement();
+                    }else{
+                        //奇数
+                        odd.getAndIncrement();
+                    }
+                });
+                n.setOdd(odd.get());
+                n.setEven(even.get());
+                noWinDataInfoListNew.add(n);
+            }
+            long t4 = System.currentTimeMillis();
+            System.out.println("从大到小:奇偶运算耗时：" + (t4-t3));
+            noWinDataService.batchUpdateById(noWinDataInfoListNew);
+            long t5 = System.currentTimeMillis();
+            System.out.println("从大到小:插入数据库耗时：" + (t5-t4));
+        }
+        return "从大到小:奇数偶数运算结束！";
     }
 
 
@@ -476,6 +549,7 @@ public class BallController {
                                                            @RequestParam Integer moneyStart,
                                                            @RequestParam Integer moneyEnd
                                                             ){
+        long t1 = System.currentTimeMillis();
         String[] redBallSplit = null;
         if(!StringUtils.isEmpty(redBall)){
             redBallSplit = redBall.split(",");
@@ -485,59 +559,76 @@ public class BallController {
             blueBallSplit = blueBall.split(",");
         }
         Map<Integer,String> map = new HashMap<>();
-        int pageNum = 1;
+        AtomicInteger pageNum = new AtomicInteger(1);
         int pageSize = 100000;
-        Boolean flag1 = true;
+        AtomicReference<Boolean> flag1 = new AtomicReference<>(true);
         String[] finalRedBallSplit = redBallSplit;
         String[] finalBlueBallSplit = blueBallSplit;
-        while(flag1){
-            int startIndex = (pageNum - 1) * pageSize;
-            int endIndex = pageNum * pageSize;
-            List<NoWinDataInfo> noWinDataServiceAll = noWinDataService.getAll(startIndex,endIndex);
-            if(noWinDataServiceAll == null || noWinDataServiceAll.size() ==0){
-                flag1 = false;
-                break;
+        while(flag1.get()){
+            CountDownLatch countDownLatch = new CountDownLatch(6);
+            for (int i = 1; i <= 6; i++) {
+                int finalPageNum = pageNum.get();
+                new Thread(() -> {
+                    int startIndex = (finalPageNum - 1) * pageSize;
+                    int endIndex = finalPageNum * pageSize;
+                    System.out.println(Thread.currentThread().getName() + "\t" + "开始,起始位置：" +startIndex + ",结束位置：" + endIndex);
+                    List<NoWinDataInfo> noWinDataServiceAll = noWinDataService.getAll(startIndex,endIndex);
+                    if(noWinDataServiceAll == null || noWinDataServiceAll.size() ==0){
+                        flag1.set(false);
+                    }
+
+                    noWinDataServiceAll.forEach(n ->{
+                        String noWinNum = n.getNoWinNum();
+                        String[] noWinSplit = noWinNum.split(":");
+                        String redBall6 = noWinSplit[0];
+                        String BlueBall3 = noWinSplit[1];
+                        AtomicBoolean flag = new AtomicBoolean(true);
+                        if(finalRedBallSplit != null){
+                            Arrays.stream(finalRedBallSplit).forEach(r ->{
+                                if(!redBall6.contains(r)){
+                                    flag.set(false);
+                                }
+                            });
+                        }
+                        if(finalBlueBallSplit != null && flag.get()){
+                            Arrays.stream(finalBlueBallSplit).forEach(b ->{
+                                if(!BlueBall3.contains(b)){
+                                    flag.set(false);
+                                }
+                            });
+                        }
+                        int odd1 = n.getOdd();
+                        if(odd1 < odd && flag.get()){
+                            flag.set(false);
+                        }
+                        int even1 = n.getEven();
+                        if(even1 < even && flag.get()){
+                            flag.set(false);
+                        }
+                        int moneyCount = n.getMoneyCount();
+                        if((moneyCount < moneyStart || moneyCount > moneyEnd) && flag.get()){
+                            flag.set(false);
+                        }
+                        if(flag.get()){
+                            int id = n.getId();
+                            map.put(id,noWinNum);
+                        }
+                    });
+
+                    countDownLatch.countDown();
+                }, ("线程：" + i)).start();
+                pageNum.getAndIncrement();
+                System.out.println("第" + pageNum.get() + "次运算开始");
             }
-            System.out.println("第" + pageNum + "次运算开始");
-            pageNum ++;
-            noWinDataServiceAll.forEach(n ->{
-                String noWinNum = n.getNoWinNum();
-                String[] noWinSplit = noWinNum.split(":");
-                String redBall6 = noWinSplit[0];
-                String BlueBall3 = noWinSplit[1];
-                AtomicBoolean flag = new AtomicBoolean(true);
-                if(finalRedBallSplit != null){
-                    Arrays.stream(finalRedBallSplit).forEach(r ->{
-                        if(!redBall6.contains(r)){
-                            flag.set(false);
-                        }
-                    });
-                }
-                if(finalBlueBallSplit != null && flag.get()){
-                    Arrays.stream(finalBlueBallSplit).forEach(b ->{
-                        if(!BlueBall3.contains(b)){
-                            flag.set(false);
-                        }
-                    });
-                }
-                int odd1 = n.getOdd();
-                if(odd1 < odd && flag.get()){
-                    flag.set(false);
-                }
-                int even1 = n.getEven();
-                if(even1 < even && flag.get()){
-                    flag.set(false);
-                }
-                int moneyCount = n.getMoneyCount();
-                if((moneyCount < moneyStart || moneyCount > moneyEnd) && flag.get()){
-                    flag.set(false);
-                }
-                if(flag.get()){
-                    int id = n.getId();
-                    map.put(id,noWinNum);
-                }
-            });
+            try {
+                countDownLatch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
         }
+        long t2 = System.currentTimeMillis();
+        System.out.println("根据条件选择合适的6+3组合结束,耗时：" + ((t2-t1)/1000) + "秒");
         return JSONUtil.toJsonStr(map);
     }
 
